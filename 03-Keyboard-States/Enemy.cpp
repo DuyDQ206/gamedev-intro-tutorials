@@ -56,5 +56,5 @@ bool CEnemy::IsDead() const
 
 bool CEnemy::IsOffScreen()
 {
-    return y > SCREEN_HEIGHT;
+    return y > SCREEN_HEIGHT + ENEMY_HEIGHT;
 }

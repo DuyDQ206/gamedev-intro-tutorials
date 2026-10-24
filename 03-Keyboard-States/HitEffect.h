@@ -4,7 +4,9 @@
 #include "Sprites.h"
 
 #define ID_SPRITE_HIT 30004
-#define HIT_EFFECT_DURATION 150 // millisecond
+#define HIT_EFFECT_DURATION 160 // millisecond
+#define HIT_EFFECT_WIDTH 34.0f
+#define HIT_EFFECT_HEIGHT 19.0f
 
 class CHitEffect : public CGameObject
 {

@@ -6,11 +6,15 @@
 #include "Bullet.h"
 
 // Kich thuoc man hinh game
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 720
+#define SCREEN_WIDTH 480
+#define SCREEN_HEIGHT 640
+
+// Kich thuoc sprite Player
+#define PLAYER_WIDTH 41.0f
+#define PLAYER_HEIGHT 31.0f
 
 // Toc do di chuyen, don vi pixel/giay
-#define PLAYER_SPEED 300.0f
+#define PLAYER_SPEED 320.0f
 #define ID_SPRITE_PLAYER 30001
 #define PLAYER_MAX_HEALTH 3
 #define PLAYER_INVULNERABLE_TIME 1500 // 1.5s bat tu sau khi dinh don

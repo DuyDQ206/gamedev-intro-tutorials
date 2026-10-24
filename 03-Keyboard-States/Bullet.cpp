@@ -1,4 +1,3 @@
-
 #include "Bullet.h"
 #include "Sprite.h"
 
@@ -12,12 +11,15 @@ CBullet::CBullet(float x, float y)
 
 void CBullet::Update(DWORD dt)
 {
-    // dt duoc tinh bang milliseconds
     float elapsed = dt / 1000.0f;
 
-    // Cap nhat vi tri vien dan
     x += vx * elapsed;
     y += vy * elapsed;
+
+    if (IsOffScreen())
+    {
+        Delete();
+    }
 }
 
 void CBullet::Render()
@@ -32,6 +34,5 @@ void CBullet::Render()
 
 bool CBullet::IsOffScreen()
 {
-    // Tam thoi su dung chieu cao man hinh 720 pixel
-    return y < -16.0f;
+    return y < -BULLET_HEIGHT;
 }

@@ -27,8 +27,8 @@ void CPlayer::Reset()
     dead = false;
     lastShootTime = 0;
     lastDamageTime = 0;
-    x = SCREEN_WIDTH / 2.0f - 21.5f;
-    y = SCREEN_HEIGHT - 80.0f;
+    x = SCREEN_WIDTH / 2.0f;
+    y = SCREEN_HEIGHT - 60.0f;
     vx = 0.0f;
     vy = 0.0f;
 
@@ -57,11 +57,11 @@ void CPlayer::Shoot()
         return;
 
     DWORD now = GetTickCount();
-    if (now - lastShootTime >= 200) // Cooldown 200ms
+    if (now - lastShootTime >= 180) // Cooldown 180ms
     {
-        // Player sprite width=43, height=32; Bullet width=7, height=24
-        float bulletX = x + (43.0f - 7.0f) / 2.0f;
-        float bulletY = y - 24.0f;
+        // Ban dan tu chinh giua mui tau cua nguoi choi
+        float bulletX = x;
+        float bulletY = y - (PLAYER_HEIGHT + BULLET_HEIGHT) / 2.0f;
 
         bullets.push_back(new CBullet(bulletX, bulletY));
         lastShootTime = now;
@@ -97,24 +97,24 @@ void CPlayer::Update(DWORD dt)
 {
     if (!dead)
     {
-        // Chuyen doi dt tu milliseconds sang seconds
         float elapsed = dt / 1000.0f;
 
         x += vx * elapsed;
         y += vy * elapsed;
 
-        // Gioi han phi thuyen trong man hinh
-        if (x < 0.0f)
-            x = 0.0f;
+        // Gioi han phi thuyen trong man hinh (x, y la toa do tam cua tau)
+        float halfW = PLAYER_WIDTH / 2.0f;
+        float halfH = PLAYER_HEIGHT / 2.0f;
 
-        if (y < 0.0f)
-            y = 0.0f;
+        if (x < halfW)
+            x = halfW;
+        if (x > SCREEN_WIDTH - halfW)
+            x = SCREEN_WIDTH - halfW;
 
-        if (x > SCREEN_WIDTH - 43.0f)
-            x = SCREEN_WIDTH - 43.0f;
-
-        if (y > SCREEN_HEIGHT - 32.0f)
-            y = SCREEN_HEIGHT - 32.0f;
+        if (y < halfH)
+            y = halfH;
+        if (y > SCREEN_HEIGHT - halfH)
+            y = SCREEN_HEIGHT - halfH;
     }
 
     UpdateBullets(dt);

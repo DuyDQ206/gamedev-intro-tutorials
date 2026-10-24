@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "GameObject.h"
@@ -7,8 +6,12 @@
 // ID sprite cua vien dan
 #define ID_SPRITE_BULLET 30002
 
+// Kich thuoc vien dan
+#define BULLET_WIDTH 6.0f
+#define BULLET_HEIGHT 24.0f
+
 // Toc do dan, pixel/giay
-#define BULLET_SPEED 500.0f
+#define BULLET_SPEED 550.0f
 
 class CBullet : public CGameObject
 {

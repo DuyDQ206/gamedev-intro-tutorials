@@ -10,6 +10,9 @@
 ================================================================ */
 
 #include <windows.h>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
 
 #include "debug.h"
 #include "Game.h"
@@ -29,26 +32,17 @@
 #include "Bullet.h"
 #include "Enemy.h"
 #include "HitEffect.h"
-#include <cstdlib>
-#include <ctime>
 
 #define WINDOW_CLASS_NAME L"SampleWindow"
-#define MAIN_WINDOW_TITLE L"03 - Space Shooter"
+#define MAIN_WINDOW_TITLE L"Space Shooter"
 #define WINDOW_ICON_PATH L"mario.ico"
 
+// Mau nen khong gian vu tru
+#define BACKGROUND_COLOR D3DXCOLOR(18.0f/255, 20.0f/255, 32.0f/255, 1.0f)
 
-#define BACKGROUND_COLOR D3DXCOLOR(30.0f/255, 30.0f/255, 30.0f/255, 1.0f)
-
-#define ID_TEX_MARIO 0
-#define ID_TEX_ENEMY 10
-#define ID_TEX_MISC 20
 #define ID_TEX_PREVIEW 30
 
-#define ID_SPRITE_BRICK 20001
-
 #define TEXTURES_DIR L"textures"
-#define TEXTURE_PATH_MARIO TEXTURES_DIR "\\mario.png"
-#define TEXTURE_PATH_MISC TEXTURES_DIR "\\misc.png"
 #define TEXTURE_PATH_PREVIEW TEXTURES_DIR "\\preview.png"
 
 #define ID_SPRITE_PLAYER 30001
@@ -56,15 +50,8 @@
 #define ID_SPRITE_ENEMY_SHIP 30003
 #define ID_SPRITE_HIT 30004
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 720
-
-#define MARIO_START_X 200.0f
-#define MARIO_START_Y 10.0f
-
-#define BRICK_X 0.0f
-#define BRICK_Y GROUND_Y + 20.0f
-#define NUM_BRICKS 50
+#define SCREEN_WIDTH 480
+#define SCREEN_HEIGHT 640
 
 HWND hMainWnd = NULL;
 CMario* mario = NULL;
@@ -75,7 +62,7 @@ CSampleKeyHandler* keyHandler;
 vector<LPGAMEOBJECT> objects;
 
 DWORD lastEnemySpawnTime = 0;
-const DWORD ENEMY_SPAWN_INTERVAL = 1000; // 1 giay
+const DWORD ENEMY_SPAWN_INTERVAL = 900; // 0.9 giay
 int score = 0;
 
 LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -93,60 +80,56 @@ LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 /*
 	Load all game resources 
-	In this example: load textures, sprites, animations and mario object
 */
-
 void LoadResources()
 {
-	// 1. Khoi tao cac bo quan ly tai nguyen
 	CTextures* textures = CTextures::GetInstance();
 	CSprites* sprites = CSprites::GetInstance();
 
-	// 2. Tai texture duy nhat: preview.png
+	// 1. Tai texture preview.png da duoc lam trong suot
 	textures->Add(
 		ID_TEX_PREVIEW,
 		TEXTURE_PATH_PREVIEW
 	);
 
-	LPTEXTURE texPreview =
-		textures->Get(ID_TEX_PREVIEW);
+	LPTEXTURE texPreview = textures->Get(ID_TEX_PREVIEW);
 
-	// 3. Dang ky sprite Player
+	// 2. Dang ky sprite Player (canh chuan doi xung: rong 41, cao 31)
 	sprites->Add(
 		ID_SPRITE_PLAYER,
-		75, 50,
-		118, 82,
+		72, 50,
+		112, 80,
 		texPreview
 	);
 
-	// 4. Dang ky sprite Bullet
+	// 3. Dang ky sprite Bullet (Laser dung chuan: rong 6, cao 24)
 	sprites->Add(
 		ID_SPRITE_BULLET,
-		76, 226,
-		83, 250,
+		72, 230,
+		77, 253,
 		texPreview
 	);
 
-	// 5. Dang ky sprite Enemy
+	// 4. Dang ky sprite Enemy (canh chuan doi xung huong xuong: rong 39, cao 34)
 	sprites->Add(
 		ID_SPRITE_ENEMY_SHIP,
-		75, 463,
-		115, 495,
+		72, 460,
+		110, 493,
 		texPreview
 	);
 
-	// 6. Dang ky sprite hieu ung trung dan
+	// 5. Dang ky sprite hieu ung trung dan / no (rong 34, cao 19)
 	sprites->Add(
 		ID_SPRITE_HIT,
-		201, 260,
-		224, 281,
+		196, 258,
+		229, 276,
 		texPreview
 	);
 
-	// 7. Tao Player
+	// 6. Tao Player tai chinh giua mep duoi man hinh
 	player = new CPlayer(
-		SCREEN_WIDTH / 2.0f - 21.5f,
-		SCREEN_HEIGHT - 80.0f
+		SCREEN_WIDTH / 2.0f,
+		SCREEN_HEIGHT - 60.0f
 	);
 
 	objects.push_back(player);
@@ -172,38 +155,38 @@ void ResetGame()
 	lastEnemySpawnTime = GetTickCount();
 }
 
+/*
+	Kiem tra va cham dua tren toa do tam cua hai doi tuong
+*/
 bool CheckCollision(
 	float x1, float y1, float w1, float h1,
 	float x2, float y2, float w2, float h2)
 {
-	return x1 < x2 + w2 &&
-		x1 + w1 > x2 &&
-		y1 < y2 + h2 &&
-		y1 + h1 > y2;
+	return (fabs(x1 - x2) * 2.0f < (w1 + w2)) &&
+		   (fabs(y1 - y2) * 2.0f < (h1 + h2));
 }
 
 /*
 	Update world status for this frame
-	dt: time period between beginning of last frame and beginning of this frame
 */
-
 void Update(DWORD dt)
 {
-	// 1. Cap nhat tat ca doi tuong hien tai
+	// 1. Cap nhat tat ca doi tuong
 	for (int i = 0; i < (int)objects.size(); i++)
 	{
 		objects[i]->Update(dt);
 	}
 
-	// 2. Tao enemy moi moi 1 giay neu player con song
+	// 2. Tao enemy moi neu player con song
 	DWORD now = GetTickCount();
 
 	if (player != nullptr && !player->IsDead())
 	{
 		if (now - lastEnemySpawnTime >= ENEMY_SPAWN_INTERVAL)
 		{
-			float enemyX = (float)(rand() % (SCREEN_WIDTH - 40));
-			float enemyY = 0.0f;
+			float halfEnemyW = ENEMY_WIDTH / 2.0f;
+			float enemyX = halfEnemyW + (float)(rand() % (int)(SCREEN_WIDTH - ENEMY_WIDTH));
+			float enemyY = -ENEMY_HEIGHT / 2.0f;
 
 			CEnemy* enemy = new CEnemy(enemyX, enemyY);
 			objects.push_back(enemy);
@@ -212,7 +195,7 @@ void Update(DWORD dt)
 		}
 	}
 
-	// 3. Xu ly va cham: Dan (Bullet) va cham voi Quai (Enemy)
+	// 3. Xu ly va cham: Dan (Bullet) ban trung Quai (Enemy)
 	if (player != nullptr)
 	{
 		std::vector<CBullet*>& bullets = player->GetBullets();
@@ -227,17 +210,14 @@ void Update(DWORD dt)
 				CEnemy* enemy = dynamic_cast<CEnemy*>(objects[i]);
 				if (enemy != nullptr && !enemy->IsDead() && !enemy->IsDeleted())
 				{
-					// Dan: rong 7, cao 24. Quai: rong 40, cao 32
-					if (CheckCollision(bullet->GetX(), bullet->GetY(), 7.0f, 24.0f,
-									   enemy->GetX(), enemy->GetY(), 40.0f, 32.0f))
+					if (CheckCollision(bullet->GetX(), bullet->GetY(), BULLET_WIDTH, BULLET_HEIGHT,
+									   enemy->GetX(), enemy->GetY(), ENEMY_WIDTH, ENEMY_HEIGHT))
 					{
 						enemy->TakeDamage(1);
 						bullet->Delete();
 
-						// Tao hieu ung trung dan (HitEffect rong 23, cao 21)
-						float hitX = enemy->GetX() + (40.0f - 23.0f) / 2.0f;
-						float hitY = enemy->GetY() + (32.0f - 21.0f) / 2.0f;
-						objects.push_back(new CHitEffect(hitX, hitY));
+						// Hieu ung no tai tam cua quai
+						objects.push_back(new CHitEffect(enemy->GetX(), enemy->GetY()));
 
 						score += 10;
 						break;
@@ -247,7 +227,7 @@ void Update(DWORD dt)
 		}
 	}
 
-	// 4. Xu ly va cham: Quai (Enemy) va cham voi Nguoi choi (Player)
+	// 4. Xu ly va cham: Quai (Enemy) va cham Nguoi choi (Player)
 	if (player != nullptr && !player->IsDead())
 	{
 		for (size_t i = 0; i < objects.size(); i++)
@@ -255,16 +235,15 @@ void Update(DWORD dt)
 			CEnemy* enemy = dynamic_cast<CEnemy*>(objects[i]);
 			if (enemy != nullptr && !enemy->IsDead() && !enemy->IsDeleted())
 			{
-				// Player: rong 43, cao 32. Enemy: rong 40, cao 32
-				if (CheckCollision(player->GetX(), player->GetY(), 43.0f, 32.0f,
-								   enemy->GetX(), enemy->GetY(), 40.0f, 32.0f))
+				if (CheckCollision(player->GetX(), player->GetY(), PLAYER_WIDTH, PLAYER_HEIGHT,
+								   enemy->GetX(), enemy->GetY(), ENEMY_WIDTH, ENEMY_HEIGHT))
 				{
 					if (!player->IsInvulnerable())
 					{
 						player->TakeDamage(1);
 						enemy->TakeDamage(1);
 
-						// Hieu ung no tai vi tri va cham
+						// Hieu ung no ngay tai diem tiep xuc
 						float hitX = (player->GetX() + enemy->GetX()) / 2.0f;
 						float hitY = (player->GetY() + enemy->GetY()) / 2.0f;
 						objects.push_back(new CHitEffect(hitX, hitY));
@@ -274,7 +253,7 @@ void Update(DWORD dt)
 		}
 	}
 
-	// 5. Xoa enemy da bay khoi man hinh hoac da chet, xoa hit effect da xong
+	// 5. Xoa enemy da chet hoac ra khoi man hinh, va hit effect da hoan thanh
 	for (int i = (int)objects.size() - 1; i >= 0; i--)
 	{
 		LPGAMEOBJECT obj = objects[i];
@@ -288,7 +267,7 @@ void Update(DWORD dt)
 		}
 	}
 
-	// 6. Cap nhat tieu de cua so de nguoi choi theo doi Mau (HP) va Diem
+	// 6. Cap nhat tieu de cua so (Hien thi HP va Score)
 	if (hMainWnd != NULL && player != nullptr)
 	{
 		WCHAR title[128];
@@ -303,7 +282,6 @@ void Update(DWORD dt)
 		SetWindowText(hMainWnd, title);
 	}
 }
-
 
 void Render()
 {
@@ -341,24 +319,34 @@ HWND CreateGameWindow(HINSTANCE hInstance, int nCmdShow, int ScreenWidth, int Sc
 	wc.lpfnWndProc = (WNDPROC)WinProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hIcon = (HICON)LoadImage(hInstance, WINDOW_ICON_PATH, IMAGE_ICON, 0, 0, LR_LOADFROMFILE);;
+	wc.hIcon = (HICON)LoadImage(hInstance, WINDOW_ICON_PATH, IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = WINDOW_CLASS_NAME;
 	wc.hIconSm = NULL;
 
 	RegisterClassEx(&wc);
 
+	// Tinh toan kich thuoc cua so de vung Client Area chinh xac ScreenWidth x ScreenHeight
+	DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+	RECT wr = { 0, 0, ScreenWidth, ScreenHeight };
+	AdjustWindowRect(&wr, dwStyle, FALSE);
+
+	int winWidth = wr.right - wr.left;
+	int winHeight = wr.bottom - wr.top;
+	int winX = (GetSystemMetrics(SM_CXSCREEN) - winWidth) / 2;
+	int winY = (GetSystemMetrics(SM_CYSCREEN) - winHeight) / 2;
+
 	HWND hWnd =
 		CreateWindow(
 			WINDOW_CLASS_NAME,
 			MAIN_WINDOW_TITLE,
-			WS_OVERLAPPEDWINDOW, // WS_EX_TOPMOST | WS_VISIBLE | WS_POPUP,
-			CW_USEDEFAULT,
-			CW_USEDEFAULT,
-			ScreenWidth,
-			ScreenHeight,
+			dwStyle,
+			winX,
+			winY,
+			winWidth,
+			winHeight,
 			NULL,
 			NULL,
 			hInstance,
@@ -396,8 +384,6 @@ int Run()
 
 		ULONGLONG now = GetTickCount64();
 
-		// dt: the time between (beginning of last frame) and now
-		// this frame: the frame we are about to render
 		ULONGLONG dt = now - frameStart;
 
 		if (dt >= tickPerFrame)
@@ -431,7 +417,6 @@ int WINAPI WinMain(
 	keyHandler = new CSampleKeyHandler();
 	game->InitKeyboard(keyHandler);
 
-	SetWindowPos(hWnd, 0, 0, 0, SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
 	srand((unsigned int)time(NULL));
 	LoadResources();
 

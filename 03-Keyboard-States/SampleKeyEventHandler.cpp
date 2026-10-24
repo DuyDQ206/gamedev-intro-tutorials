@@ -8,6 +8,7 @@
 
 extern CMario* mario;
 extern CPlayer* player;
+extern void ResetGame();
 
 void CSampleKeyHandler::OnKeyDown(int KeyCode)
 {
@@ -17,6 +18,10 @@ void CSampleKeyHandler::OnKeyDown(int KeyCode)
 	case DIK_SPACE:
 		if (player != nullptr)
 			player->Shoot();
+		break;
+	case DIK_R:
+		if (player != nullptr && player->IsDead())
+			ResetGame();
 		break;
 	case DIK_S:
 		if (mario != nullptr)

@@ -149,7 +149,8 @@
     <ClInclude Include="Animations.h" />
     <ClInclude Include="Brick.h" />
     <ClInclude Include="Bullet.h" />
-    <ClInclude Include="Enemy.h" />
+    <ClInclude Include="Enemy.h" />
+    <ClInclude Include="HitEffect.h" />
     <ClInclude Include="KeyEventHandler.h" />
     <ClInclude Include="Mario.h" />
     <ClInclude Include="debug.h" />

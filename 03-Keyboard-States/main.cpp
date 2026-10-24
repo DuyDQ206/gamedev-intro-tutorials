@@ -28,11 +28,12 @@
 #include "Player.h"
 #include "Bullet.h"
 #include "Enemy.h"
+#include "HitEffect.h"
 #include <cstdlib>
 #include <ctime>
 
 #define WINDOW_CLASS_NAME L"SampleWindow"
-#define MAIN_WINDOW_TITLE L"03 - Keyboard and Mario states"
+#define MAIN_WINDOW_TITLE L"03 - Space Shooter"
 #define WINDOW_ICON_PATH L"mario.ico"
 
 
@@ -65,6 +66,7 @@
 #define BRICK_Y GROUND_Y + 20.0f
 #define NUM_BRICKS 50
 
+HWND hMainWnd = NULL;
 CMario* mario = NULL;
 CPlayer* player = nullptr;
 
@@ -74,6 +76,7 @@ vector<LPGAMEOBJECT> objects;
 
 DWORD lastEnemySpawnTime = 0;
 const DWORD ENEMY_SPAWN_INTERVAL = 1000; // 1 giay
+int score = 0;
 
 LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -149,6 +152,35 @@ void LoadResources()
 	objects.push_back(player);
 }
 
+void ResetGame()
+{
+	score = 0;
+	if (player != nullptr)
+	{
+		player->Reset();
+	}
+
+	for (int i = (int)objects.size() - 1; i >= 0; i--)
+	{
+		if (objects[i] != player)
+		{
+			delete objects[i];
+			objects.erase(objects.begin() + i);
+		}
+	}
+
+	lastEnemySpawnTime = GetTickCount();
+}
+
+bool CheckCollision(
+	float x1, float y1, float w1, float h1,
+	float x2, float y2, float w2, float h2)
+{
+	return x1 < x2 + w2 &&
+		x1 + w1 > x2 &&
+		y1 < y2 + h2 &&
+		y1 + h1 > y2;
+}
 
 /*
 	Update world status for this frame
@@ -157,36 +189,118 @@ void LoadResources()
 
 void Update(DWORD dt)
 {
-	// Cap nhat tat ca doi tuong hien tai
+	// 1. Cap nhat tat ca doi tuong hien tai
 	for (int i = 0; i < (int)objects.size(); i++)
 	{
 		objects[i]->Update(dt);
 	}
 
-	// Tao enemy moi moi 1 giay
+	// 2. Tao enemy moi moi 1 giay neu player con song
 	DWORD now = GetTickCount();
 
-	if (now - lastEnemySpawnTime >= ENEMY_SPAWN_INTERVAL)
+	if (player != nullptr && !player->IsDead())
 	{
-		float enemyX = (float)(rand() % (SCREEN_WIDTH - 40));
-		float enemyY = 0.0f;
+		if (now - lastEnemySpawnTime >= ENEMY_SPAWN_INTERVAL)
+		{
+			float enemyX = (float)(rand() % (SCREEN_WIDTH - 40));
+			float enemyY = 0.0f;
 
-		CEnemy* enemy = new CEnemy(enemyX, enemyY);
-		objects.push_back(enemy);
+			CEnemy* enemy = new CEnemy(enemyX, enemyY);
+			objects.push_back(enemy);
 
-		lastEnemySpawnTime = now;
+			lastEnemySpawnTime = now;
+		}
 	}
 
-	// Xoa enemy da bay khoi man hinh
+	// 3. Xu ly va cham: Dan (Bullet) va cham voi Quai (Enemy)
+	if (player != nullptr)
+	{
+		std::vector<CBullet*>& bullets = player->GetBullets();
+		for (size_t b = 0; b < bullets.size(); b++)
+		{
+			CBullet* bullet = bullets[b];
+			if (bullet->IsDeleted() || bullet->IsOffScreen())
+				continue;
+
+			for (size_t i = 0; i < objects.size(); i++)
+			{
+				CEnemy* enemy = dynamic_cast<CEnemy*>(objects[i]);
+				if (enemy != nullptr && !enemy->IsDead() && !enemy->IsDeleted())
+				{
+					// Dan: rong 7, cao 24. Quai: rong 40, cao 32
+					if (CheckCollision(bullet->GetX(), bullet->GetY(), 7.0f, 24.0f,
+									   enemy->GetX(), enemy->GetY(), 40.0f, 32.0f))
+					{
+						enemy->TakeDamage(1);
+						bullet->Delete();
+
+						// Tao hieu ung trung dan (HitEffect rong 23, cao 21)
+						float hitX = enemy->GetX() + (40.0f - 23.0f) / 2.0f;
+						float hitY = enemy->GetY() + (32.0f - 21.0f) / 2.0f;
+						objects.push_back(new CHitEffect(hitX, hitY));
+
+						score += 10;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// 4. Xu ly va cham: Quai (Enemy) va cham voi Nguoi choi (Player)
+	if (player != nullptr && !player->IsDead())
+	{
+		for (size_t i = 0; i < objects.size(); i++)
+		{
+			CEnemy* enemy = dynamic_cast<CEnemy*>(objects[i]);
+			if (enemy != nullptr && !enemy->IsDead() && !enemy->IsDeleted())
+			{
+				// Player: rong 43, cao 32. Enemy: rong 40, cao 32
+				if (CheckCollision(player->GetX(), player->GetY(), 43.0f, 32.0f,
+								   enemy->GetX(), enemy->GetY(), 40.0f, 32.0f))
+				{
+					if (!player->IsInvulnerable())
+					{
+						player->TakeDamage(1);
+						enemy->TakeDamage(1);
+
+						// Hieu ung no tai vi tri va cham
+						float hitX = (player->GetX() + enemy->GetX()) / 2.0f;
+						float hitY = (player->GetY() + enemy->GetY()) / 2.0f;
+						objects.push_back(new CHitEffect(hitX, hitY));
+					}
+				}
+			}
+		}
+	}
+
+	// 5. Xoa enemy da bay khoi man hinh hoac da chet, xoa hit effect da xong
 	for (int i = (int)objects.size() - 1; i >= 0; i--)
 	{
-		CEnemy* enemy = dynamic_cast<CEnemy*>(objects[i]);
+		LPGAMEOBJECT obj = objects[i];
+		if (obj == player)
+			continue;
 
-		if (enemy != nullptr && enemy->IsOffScreen())
+		if (obj->IsDeleted())
 		{
-			delete enemy;
+			delete obj;
 			objects.erase(objects.begin() + i);
 		}
+	}
+
+	// 6. Cap nhat tieu de cua so de nguoi choi theo doi Mau (HP) va Diem
+	if (hMainWnd != NULL && player != nullptr)
+	{
+		WCHAR title[128];
+		if (player->IsDead())
+		{
+			wsprintf(title, L"GAME OVER! Diem: %d | Nhan [R] de choi lai", score);
+		}
+		else
+		{
+			wsprintf(title, L"Space Shooter - Mau (HP): %d/3 | Diem: %d", player->GetHealth(), score);
+		}
+		SetWindowText(hMainWnd, title);
 	}
 }
 
@@ -307,6 +421,7 @@ int WINAPI WinMain(
 	_In_ int nCmdShow
 ) {
 	HWND hWnd = CreateGameWindow(hInstance, nCmdShow, SCREEN_WIDTH, SCREEN_HEIGHT);
+	hMainWnd = hWnd;
 
 	SetDebugWindow(hWnd);
 

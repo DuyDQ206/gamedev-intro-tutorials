@@ -11,11 +11,15 @@
 
 class CEnemy : public CGameObject
 {
+private:
+    int health = 1;
+    bool dead = false;
 public:
     CEnemy(float x, float y);
 
     void Update(DWORD dt) override;
     void Render() override;
-
+    void TakeDamage(int damage);
+    bool IsDead() const;
     bool IsOffScreen();
 };

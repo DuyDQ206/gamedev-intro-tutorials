@@ -17,13 +17,21 @@ protected:
 
 	int nx;	 
 
-	int state;									
+	int state;
+	bool isDeleted = false;									
 public: 
 	void SetPosition(float x, float y) { this->x = x, this->y = y; }
 	void SetSpeed(float vx, float vy) { this->vx = vx, this->vy = vy; }
 
+	float GetX() const { return x; }
+	float GetY() const { return y; }
+	void GetPosition(float& x, float& y) const { x = this->x; y = this->y; }
+
 	void SetState(int state) { this->state = state; }
 	int GetState() { return this->state; }
+
+	virtual void Delete() { isDeleted = true; }
+	bool IsDeleted() const { return isDeleted; }
 
 	CGameObject();
 	CGameObject(float x, float y):CGameObject() { this->x = x; this->y = y; }

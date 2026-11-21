@@ -36,6 +36,7 @@
 #include "Goomba.h"
 #include "Coin.h"
 #include "Platform.h"
+#include "Star.h"
 
 #include "SampleKeyEventHandler.h"
 
@@ -338,6 +339,21 @@ void LoadAssetsCoin()
 	ani->Add(ID_SPRITE_COIN + 3);
 	animations->Add(ID_ANI_COIN, ani);
 }
+void LoadAssetsStar()
+{
+	CTextures* textures = CTextures::GetInstance();
+	CSprites* sprites = CSprites::GetInstance();
+	CAnimations* animations = CAnimations::GetInstance();
+
+	LPTEXTURE texMisc = textures->Get(ID_TEX_MISC);
+
+	sprites->Add(ID_SPRITE_STAR + 1, 354, 190, 354 + 16, 190 + 15, texMisc);
+
+	LPANIMATION ani = new CAnimation(301);
+	ani->Add(ID_SPRITE_STAR + 1);
+
+	animations->Add(ID_ANI_STAR, ani);
+}
 
 void LoadAssetsOther()
 {
@@ -370,6 +386,7 @@ void LoadResources()
 	LoadAssetsGoomba();
 	LoadAssetsBrick();
 	LoadAssetsCoin();
+	LoadAssetsStar();
 	LoadAssetsOther();
 }
 
@@ -462,6 +479,12 @@ void Reload()
 	{
 		CCoin* c = new CCoin(COIN_X + i * (COIN_WIDTH * 2), GROUND_Y - 96.0f);
 		objects.push_back(c);
+	}
+
+	// STARS
+	for (int i = 0;i < 3;i++) {
+		CStar* s = new CStar(120.f, GROUND_Y);
+		objects.push_back(s);
 	}
 }
 

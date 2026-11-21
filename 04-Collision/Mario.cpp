@@ -6,6 +6,7 @@
 
 #include "Goomba.h"
 #include "Coin.h"
+#include "Star.h"
 
 #include "Collision.h"
 
@@ -50,6 +51,8 @@ void CMario::OnCollisionWith(LPCOLLISIONEVENT e)
 		OnCollisionWithGoomba(e);
 	else if (dynamic_cast<CCoin*>(e->obj))
 		OnCollisionWithCoin(e);
+	else if (dynamic_cast<CStar*>(e->obj))
+		OnCollisionWithStar(e);
 }
 
 void CMario::OnCollisionWithGoomba(LPCOLLISIONEVENT e)
@@ -79,6 +82,7 @@ void CMario::OnCollisionWithGoomba(LPCOLLISIONEVENT e)
 				else
 				{
 					SetState(MARIO_STATE_DIE);
+					//goomba->SetState(GOOMBA_STATE_DIE);
 				}
 			}
 		}
@@ -89,6 +93,12 @@ void CMario::OnCollisionWithCoin(LPCOLLISIONEVENT e)
 {
 	e->obj->Delete();
 	coin++;
+}
+
+void CMario::OnCollisionWithStar(LPCOLLISIONEVENT e)
+{
+	e->obj->Delete();
+	StartUntouchable();
 }
 
 //
